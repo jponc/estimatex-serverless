@@ -18,6 +18,8 @@ type ParticipantClaims struct {
 type Client interface {
 	// CreateAccessToken creates a JWT access token
 	CreateAccessToken(participant types.Participant) (string, error)
+	// GetClaims
+	GetClaims(token string) (*ParticipantClaims, error)
 }
 
 type client struct {
@@ -47,4 +49,16 @@ func (c *client) CreateAccessToken(participant types.Participant) (string, error
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString([]byte(c.jwtSecret))
+}
+
+func (c *client) GetClaims(tokenString string) (*ParticipantClaims, error) {
+	token, err := jwt.ParseWithClaims(tokenString, &ParticipantClaims{}, func(token *jwt.Token) (interface{}, error) {
+		return []byte(c.jwtSecret), nil
+	})
+
+	if claims, ok := token.Claims.(*ParticipantClaims); ok && token.Valid {
+		return claims, nil
+	} else {
+		return nil, err
+	}
 }

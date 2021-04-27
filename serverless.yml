@@ -75,12 +75,31 @@ functions:
       JWT_SECRET: ${self:custom.env.JWT_SECRET}
       SNS_PREFIX: ${self:custom.env.SNS_PREFIX}
 
+  CastVote:
+    handler: bin/CastVote
+    events:
+      - http:
+          path: /CastVote
+          method: post
+    environment:
+      JWT_SECRET: ${self:custom.env.JWT_SECRET}
+      SNS_PREFIX: ${self:custom.env.SNS_PREFIX}
+
   # == SNS ==
   PublishToPusherParticipantJoined:
     handler: bin/PublishToPusherParticipantJoined
     events:
       - sns: ${self:service}-${self:provider.stage}-ParticipantJoined
-    timeout: 20
+    environment:
+      PUSHER_APP_ID: ${self:custom.env.PUSHER_APP_ID}
+      PUSHER_KEY: ${self:custom.env.PUSHER_KEY}
+      PUSHER_SECRET: ${self:custom.env.PUSHER_SECRET}
+      PUSHER_CLUSTER: ${self:custom.env.PUSHER_CLUSTER}
+
+  PublishToPusherParticipantVoted:
+    handler: bin/PublishToPusherParticipantVoted
+    events:
+      - sns: ${self:service}-${self:provider.stage}-ParticipantVoted
     environment:
       PUSHER_APP_ID: ${self:custom.env.PUSHER_APP_ID}
       PUSHER_KEY: ${self:custom.env.PUSHER_KEY}

@@ -35,3 +35,10 @@ type JoinRoomRequest struct {
 type JoinRoomResponse struct {
 	AccessToken string `json:"access_token"`
 }
+
+type CastVoteRequest struct {
+	Vote string `json:"vote"`
+}
+
+type CastVoteResponse struct {
+}

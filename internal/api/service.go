@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/jponc/estimatex-serverless/api/schema"
@@ -25,6 +26,8 @@ type Service interface {
 	FindRoom(ctx context.Context, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error)
 	// JoinRoom allows users to join an existing room
 	JoinRoom(ctx context.Context, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error)
+	// CastVote allows the participant to cast a vote
+	CastVote(ctx context.Context, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error)
 }
 
 type service struct {
@@ -179,6 +182,44 @@ func (s *service) JoinRoom(ctx context.Context, request events.APIGatewayProxyRe
 	res := schema.JoinRoomResponse{
 		AccessToken: token,
 	}
+
+	return lambdaresponses.Respond200(res)
+}
+
+func (s *service) CastVote(ctx context.Context, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
+	if s.snsClient == nil || s.authClient == nil {
+		log.Errorf("snsClient or authClient is nil")
+		return lambdaresponses.Respond500()
+	}
+
+	req := &schema.CastVoteRequest{}
+
+	tokens := strings.Split(request.Headers["Authorization"], " ")
+	tokenString := tokens[1]
+
+	claims, err := s.authClient.GetClaims(tokenString)
+	if err != nil {
+		log.Errorf("failed to get claims")
+	}
+
+	err = json.Unmarshal([]byte(request.Body), req)
+	if err != nil {
+		return lambdaresponses.Respond400(fmt.Errorf("failed to unmarshal body"))
+	}
+
+	msg := schema.ParticipantVotedMessage{
+		RoomID:          claims.RoomID,
+		ParticipantName: claims.Name,
+		Vote:            req.Vote,
+	}
+
+	err = s.snsClient.Publish(ctx, schema.ParticipantVoted, msg)
+	if err != nil {
+		log.Errorf("error publishing participant voted to sns: %w", err)
+		return lambdaresponses.Respond500()
+	}
+
+	res := schema.CastVoteResponse{}
 
 	return lambdaresponses.Respond200(res)
 }
