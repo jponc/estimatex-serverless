@@ -64,9 +64,31 @@ functions:
     environment:
       DB_TABLE_NAME: ${self:custom.env.DB_TABLE_NAME}
 
+  JoinRoom:
+    handler: bin/JoinRoom
+    events:
+      - http:
+          path: /JoinRoom
+          method: post
+    environment:
+      DB_TABLE_NAME: ${self:custom.env.DB_TABLE_NAME}
+      JWT_SECRET: ${self:custom.env.JWT_SECRET}
+      SNS_PREFIX: ${self:custom.env.SNS_PREFIX}
+
+  # == SNS ==
+  PublishToPusherParticipantJoined:
+    handler: bin/PublishToPusherParticipantJoined
+    events:
+      - sns: ${self:service}-${self:provider.stage}-ParticipantJoined
+    timeout: 20
+    environment:
+      PUSHER_APP_ID: ${self:custom.env.PUSHER_APP_ID}
+      PUSHER_KEY: ${self:custom.env.PUSHER_KEY}
+      PUSHER_SECRET: ${self:custom.env.PUSHER_SECRET}
+      PUSHER_CLUSTER: ${self:custom.env.PUSHER_CLUSTER}
+
 custom:
   tableName: ${self:service}-${self:provider.stage}
-
   customDomain:
     domainName: ${self:custom.${self:provider.stage}.domain}
     basePath: ''
@@ -83,6 +105,10 @@ custom:
     SNS_PREFIX: !Sub 'arn:aws:sns:${AWS::Region}:${AWS::AccountId}:${self:service}-${self:provider.stage}'
     DB_TABLE_NAME: ${self:custom.tableName}
     JWT_SECRET: ${ssm:/${self:service}/${self:provider.stage}/JWT_SECRET~true}
+    PUSHER_APP_ID: ${ssm:/${self:service}/${self:provider.stage}/PUSHER_APP_ID}
+    PUSHER_KEY: ${ssm:/${self:service}/${self:provider.stage}/PUSHER_KEY~true}
+    PUSHER_SECRET: ${ssm:/${self:service}/${self:provider.stage}/PUSHER_SECRET~true}
+    PUSHER_CLUSTER: ${ssm:/${self:service}/${self:provider.stage}/PUSHER_CLUSTER}
 
 resources:
   Resources:

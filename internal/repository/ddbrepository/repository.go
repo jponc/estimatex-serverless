@@ -2,6 +2,7 @@ package ddbrepository
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math/rand"
 	"time"
@@ -20,6 +21,8 @@ type Repository interface {
 	CreateParticipant(ctx context.Context, roomID string, name string, isAdmin bool) (*types.Participant, error)
 	// FindRoom finds the room
 	FindRoom(ctx context.Context, roomID string) (*types.Room, error)
+	// FindParticipant finds the participant in the room
+	FindParticipant(ctx context.Context, roomID, participantName string) (*types.Participant, error)
 }
 
 type repository struct {
@@ -143,7 +146,39 @@ func (r *repository) FindRoom(ctx context.Context, roomID string) (*types.Room, 
 	}
 
 	if output.Item == nil {
-		return nil, nil
+		return nil, ErrNotFound
+	}
+
+	err = dynamodbattribute.UnmarshalMap(output.Item, &i)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal map: %v", err)
+	}
+
+	return &i.Data, nil
+}
+
+func (r *repository) FindParticipant(ctx context.Context, roomID, participantName string) (*types.Participant, error) {
+	i := participantItem{}
+
+	input := &awsDynamodb.GetItemInput{
+		Key: map[string]*awsDynamodb.AttributeValue{
+			"PK": {
+				S: aws.String(fmt.Sprintf("Room_%s", roomID)),
+			},
+			"SK": {
+				S: aws.String(fmt.Sprintf("Participant_%s", participantName)),
+			},
+		},
+		TableName: aws.String(r.dynamodbClient.GetTableName()),
+	}
+
+	output, err := r.dynamodbClient.GetItem(ctx, input)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query participant: %v", err)
+	}
+
+	if output.Item == nil {
+		return nil, ErrNotFound
 	}
 
 	err = dynamodbattribute.UnmarshalMap(output.Item, &i)
@@ -167,13 +202,13 @@ func (r *repository) generateRoomID(ctx context.Context) (string, error) {
 		}
 		id := string(b)
 
-		room, err := r.FindRoom(ctx, id)
+		_, err := r.FindRoom(ctx, id)
 		if err != nil {
-			return "", err
-		}
-
-		if room == nil {
-			return id, nil
+			if errors.Is(err, ErrNotFound) {
+				return id, nil
+			} else {
+				return "", err
+			}
 		}
 	}
 }

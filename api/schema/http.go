@@ -26,3 +26,12 @@ type FindRoomRequest struct {
 type FindRoomResponse struct {
 	types.Room
 }
+
+type JoinRoomRequest struct {
+	RoomID string `json:"room_id"`
+	Name   string `json:"name"`
+}
+
+type JoinRoomResponse struct {
+	AccessToken string `json:"access_token"`
+}
