@@ -1,5 +1,14 @@
 service: estimatex
 
+package:
+  exclude:
+  - ./**
+  include:
+  - ./bin/**
+
+plugins:
+  - serverless-domain-manager
+
 provider:
   name: aws
   runtime: go1.x
@@ -28,9 +37,28 @@ provider:
         - xray:PutTelemetryRecords
 
 functions:
+  # == HTTP ==
+  SayHello:
+    handler: bin/SayHello
+    events:
+      - http:
+          path: /hello
+          method: post
 
 custom:
   tableName: ${self:service}-${self:provider.stage}
+
+  customDomain:
+      domainName: ${self:custom.${self:provider.stage}.domain}
+      basePath: ''
+      stage: ${self:provider.stage}
+      createRoute53Record: true
+    staging:
+      domain: "api-staging.estimatex.io"
+      region: "ap-southeast-2" # Sydney
+    production:
+      domain: "api.kitecards.com"
+      region: "ap-southeast-2" # Sydney
 
   env:
     SNS_PREFIX: !Sub 'arn:aws:sns:${AWS::Region}:${AWS::AccountId}:${self:service}-${self:provider.stage}'
