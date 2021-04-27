@@ -1,0 +1,65 @@
+service: estimatex
+
+provider:
+  name: aws
+  runtime: go1.x
+  profile: julian
+  memorySize: 128
+  region: ap-southeast-2 # Sydney
+  stage: ${opt:stage, 'staging'}
+  lambdaHashingVersion: "20201221"
+  apiGateway:
+    shouldStartNameWithService: true
+  tracing:
+    apiGateway: true
+    lambda: true
+  iamRoleStatements:
+    # Only allow to a specific dynamo db table
+    - Effect: Allow
+      Resource: !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${self:custom.tableName}*'
+      Action:
+        - "dynamodb:*"
+    # Allow all SNS + Xray + ElasticSearch
+    - Effect: "Allow"
+      Resource: "*"
+      Action:
+        - sns:*
+        - xray:PutTraceSegments
+        - xray:PutTelemetryRecords
+
+functions:
+
+custom:
+  tableName: ${self:service}-${self:provider.stage}
+
+  env:
+    SNS_PREFIX: !Sub 'arn:aws:sns:${AWS::Region}:${AWS::AccountId}:${self:service}-${self:provider.stage}'
+    DB_TABLE_NAME: ${self:custom.tableName}
+
+
+resources:
+  Resources:
+    Table:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:custom.tableName}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: PK
+            AttributeType: S
+          - AttributeName: SK
+            AttributeType: S
+        KeySchema:
+          - AttributeName: PK
+            KeyType: HASH
+          - AttributeName: SK
+            KeyType: RANGE
+        GlobalSecondaryIndexes:
+          - IndexName: GSI-SK-PK # Inverted PK/SK
+            KeySchema:
+              - AttributeName: SK
+                KeyType: HASH
+              - AttributeName: PK
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
