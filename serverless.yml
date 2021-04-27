@@ -45,25 +45,44 @@ functions:
           path: /hello
           method: post
 
+  HostRoom:
+    handler: bin/HostRoom
+    events:
+      - http:
+          path: /HostRoom
+          method: post
+    environment:
+      DB_TABLE_NAME: ${self:custom.env.DB_TABLE_NAME}
+      JWT_SECRET: ${self:custom.env.JWT_SECRET}
+
+  FindRoom:
+    handler: bin/FindRoom
+    events:
+      - http:
+          path: /FindRoom
+          method: post
+    environment:
+      DB_TABLE_NAME: ${self:custom.env.DB_TABLE_NAME}
+
 custom:
   tableName: ${self:service}-${self:provider.stage}
 
   customDomain:
-      domainName: ${self:custom.${self:provider.stage}.domain}
-      basePath: ''
-      stage: ${self:provider.stage}
-      createRoute53Record: true
-    staging:
-      domain: "api-staging.estimatex.io"
-      region: "ap-southeast-2" # Sydney
-    production:
-      domain: "api.kitecards.com"
-      region: "ap-southeast-2" # Sydney
+    domainName: ${self:custom.${self:provider.stage}.domain}
+    basePath: ''
+    stage: ${self:provider.stage}
+    createRoute53Record: true
+  staging:
+    domain: "api-staging.estimatex.io"
+    region: "ap-southeast-2" # Sydney
+  production:
+    domain: "api.estimatex.io"
+    region: "ap-southeast-2" # Sydney
 
   env:
     SNS_PREFIX: !Sub 'arn:aws:sns:${AWS::Region}:${AWS::AccountId}:${self:service}-${self:provider.stage}'
     DB_TABLE_NAME: ${self:custom.tableName}
-
+    JWT_SECRET: ${ssm:/${self:service}/${self:provider.stage}/JWT_SECRET~true}
 
 resources:
   Resources:
@@ -82,12 +101,3 @@ resources:
             KeyType: HASH
           - AttributeName: SK
             KeyType: RANGE
-        GlobalSecondaryIndexes:
-          - IndexName: GSI-SK-PK # Inverted PK/SK
-            KeySchema:
-              - AttributeName: SK
-                KeyType: HASH
-              - AttributeName: PK
-                KeyType: RANGE
-            Projection:
-              ProjectionType: ALL

@@ -14,6 +14,8 @@ import (
 type Client interface {
 	// GetTableName gets the table name
 	GetTableName() string
+	// GetItem gets one item using key
+	GetItem(ctx context.Context, input *dynamodb.GetItemInput) (*dynamodb.GetItemOutput, error)
 	// Scan scans the dynamodb table
 	Scan(ctx context.Context, input *dynamodb.ScanInput) (*dynamodb.ScanOutput, error)
 	// PutItem puts a new item in dynamodb table
@@ -64,6 +66,10 @@ func (c *client) BatchWriteItem(ctx context.Context, input *dynamodb.BatchWriteI
 
 func (c *client) Query(ctx context.Context, input *dynamodb.QueryInput) (*dynamodb.QueryOutput, error) {
 	return c.dynamodbClient.QueryWithContext(ctx, input)
+}
+
+func (c *client) GetItem(ctx context.Context, input *dynamodb.GetItemInput) (*dynamodb.GetItemOutput, error) {
+	return c.dynamodbClient.GetItemWithContext(ctx, input)
 }
 
 func (c *client) GetTableName() string {

@@ -26,6 +26,19 @@ func Respond400(err error) (events.APIGatewayProxyResponse, error) {
 	return events.APIGatewayProxyResponse{Body: string(body), StatusCode: 400}, nil
 }
 
+func Respond404(err error) (events.APIGatewayProxyResponse, error) {
+	resBody := errorResponseBody{
+		Error: err.Error(),
+	}
+
+	body, err := json.Marshal(resBody)
+	if err != nil {
+		return Respond500()
+	}
+
+	return events.APIGatewayProxyResponse{Body: string(body), StatusCode: 404}, nil
+}
+
 func Respond200(body interface{}) (events.APIGatewayProxyResponse, error) {
 	bodyJson, err := json.Marshal(body)
 	if err != nil {
