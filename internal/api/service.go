@@ -24,6 +24,8 @@ type Service interface {
 	HostRoom(ctx context.Context, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error)
 	// FindRoom finds the room given a room ID
 	FindRoom(ctx context.Context, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error)
+	// FindParticipants finds the participants given a room ID
+	FindParticipants(ctx context.Context, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error)
 	// JoinRoom allows users to join an existing room
 	JoinRoom(ctx context.Context, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error)
 	// CastVote allows the participant to cast a vote
@@ -106,14 +108,12 @@ func (s *service) FindRoom(ctx context.Context, request events.APIGatewayProxyRe
 		return lambdaresponses.Respond500()
 	}
 
-	req := &schema.FindRoomRequest{}
-
-	err := json.Unmarshal([]byte(request.Body), req)
-	if err != nil {
-		return lambdaresponses.Respond400(fmt.Errorf("failed to unmarshal body"))
+	roomID, ok := request.RequestContext.Authorizer["RoomID"].(string)
+	if !ok {
+		return lambdaresponses.Respond500()
 	}
 
-	room, err := s.ddbrepository.FindRoom(ctx, req.ID)
+	room, err := s.ddbrepository.FindRoom(ctx, roomID)
 	if err != nil {
 		if errors.Is(err, ddbrepository.ErrNotFound) {
 			return lambdaresponses.Respond404(fmt.Errorf("room not found"))
@@ -131,6 +131,26 @@ func (s *service) FindRoom(ctx context.Context, request events.APIGatewayProxyRe
 	return lambdaresponses.Respond200(res)
 }
 
+func (s *service) FindParticipants(ctx context.Context, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
+	if s.ddbrepository == nil {
+		log.Errorf("ddbrepository is nil")
+		return lambdaresponses.Respond500()
+	}
+
+	roomID, ok := request.RequestContext.Authorizer["RoomID"].(string)
+	if !ok {
+		return lambdaresponses.Respond500()
+	}
+
+	participants, err := s.ddbrepository.FindParticipants(ctx, roomID)
+	if err != nil {
+		log.Errorf("error finding participants: %w", err)
+		return lambdaresponses.Respond500()
+	}
+
+	return lambdaresponses.Respond200(participants)
+}
+
 func (s *service) JoinRoom(ctx context.Context, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	if s.ddbrepository == nil || s.snsClient == nil || s.authClient == nil {
 
@@ -143,6 +163,11 @@ func (s *service) JoinRoom(ctx context.Context, request events.APIGatewayProxyRe
 	err := json.Unmarshal([]byte(request.Body), req)
 	if err != nil {
 		return lambdaresponses.Respond400(fmt.Errorf("failed to unmarshal body"))
+	}
+
+	_, err = s.ddbrepository.FindRoom(ctx, req.RoomID)
+	if err != nil {
+		return lambdaresponses.Respond404(fmt.Errorf("room ID not found"))
 	}
 
 	existingParticipant, err := s.ddbrepository.FindParticipant(ctx, req.RoomID, req.Name)

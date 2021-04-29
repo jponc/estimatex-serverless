@@ -16,3 +16,5 @@ type Participant struct {
 	IsAdmin   bool      `json:"is_admin"`
 	CreatedAt time.Time `json:"created_at"`
 }
+
+type ParticipantArr []Participant

@@ -23,6 +23,8 @@ type Repository interface {
 	FindRoom(ctx context.Context, roomID string) (*types.Room, error)
 	// FindParticipant finds the participant in the room
 	FindParticipant(ctx context.Context, roomID, participantName string) (*types.Participant, error)
+	// FindParticipants finds the participant in the room
+	FindParticipants(ctx context.Context, roomID string) (*[]types.Participant, error)
 }
 
 type repository struct {
@@ -187,6 +189,40 @@ func (r *repository) FindParticipant(ctx context.Context, roomID, participantNam
 	}
 
 	return &i.Data, nil
+}
+
+func (r *repository) FindParticipants(ctx context.Context, roomID string) (*[]types.Participant, error) {
+	items := []participantItem{}
+
+	input := &awsDynamodb.QueryInput{
+		KeyConditionExpression: aws.String("PK = :PK and begins_with(SK, :SK)"),
+		ExpressionAttributeValues: map[string]*awsDynamodb.AttributeValue{
+			":PK": {
+				S: aws.String(fmt.Sprintf("Room_%s", roomID)),
+			},
+			":SK": {
+				S: aws.String("Participant_"),
+			},
+		},
+		TableName: aws.String(r.dynamodbClient.GetTableName()),
+	}
+
+	output, err := r.dynamodbClient.Query(ctx, input)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query participant: %v", err)
+	}
+
+	err = dynamodbattribute.UnmarshalListOfMaps(output.Items, &items)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal map: %v", err)
+	}
+
+	participants := []types.Participant{}
+	for _, i := range items {
+		participants = append(participants, i.Data)
+	}
+
+	return &participants, nil
 }
 
 func (r *repository) generateRoomID(ctx context.Context) (string, error) {

@@ -37,6 +37,12 @@ provider:
         - xray:PutTelemetryRecords
 
 functions:
+  # == Authorizers ==
+  Authoriser:
+    handler: bin/Authoriser
+    environment:
+      JWT_SECRET: ${self:custom.env.JWT_SECRET}
+
   # == HTTP ==
   SayHello:
     handler: bin/SayHello
@@ -44,6 +50,7 @@ functions:
       - http:
           path: /hello
           method: post
+          cors: true
 
   HostRoom:
     handler: bin/HostRoom
@@ -51,6 +58,7 @@ functions:
       - http:
           path: /HostRoom
           method: post
+          cors: true
     environment:
       DB_TABLE_NAME: ${self:custom.env.DB_TABLE_NAME}
       JWT_SECRET: ${self:custom.env.JWT_SECRET}
@@ -61,6 +69,23 @@ functions:
       - http:
           path: /FindRoom
           method: post
+          cors: true
+          authorizer:
+            name: Authoriser
+            resultTtlInSeconds: 0
+    environment:
+      DB_TABLE_NAME: ${self:custom.env.DB_TABLE_NAME}
+
+  FindParticipants:
+    handler: bin/FindParticipants
+    events:
+      - http:
+          path: /FindParticipants
+          method: post
+          cors: true
+          authorizer:
+            name: Authoriser
+            resultTtlInSeconds: 0
     environment:
       DB_TABLE_NAME: ${self:custom.env.DB_TABLE_NAME}
 
@@ -70,6 +95,7 @@ functions:
       - http:
           path: /JoinRoom
           method: post
+          cors: true
     environment:
       DB_TABLE_NAME: ${self:custom.env.DB_TABLE_NAME}
       JWT_SECRET: ${self:custom.env.JWT_SECRET}

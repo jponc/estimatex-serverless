@@ -19,10 +19,6 @@ type HostRoomResponse struct {
 	AccessToken string `json:"access_token"`
 }
 
-type FindRoomRequest struct {
-	ID string `json:"id"`
-}
-
 type FindRoomResponse struct {
 	types.Room
 }
