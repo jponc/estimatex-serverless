@@ -36,5 +36,7 @@ type CastVoteRequest struct {
 	Vote string `json:"vote"`
 }
 
-type CastVoteResponse struct {
-}
+type CastVoteResponse struct{}
+
+type RevealVotesResponse struct{}
+type ResetVotesResponse struct{}

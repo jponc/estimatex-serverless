@@ -50,7 +50,14 @@ func Respond404(err error) (events.APIGatewayProxyResponse, error) {
 		return Respond500()
 	}
 
-	return events.APIGatewayProxyResponse{Body: string(body), StatusCode: 404}, nil
+	return events.APIGatewayProxyResponse{
+		Headers: map[string]string{
+			"Access-Control-Allow-Origin":      "*",
+			"Access-Control-Allow-Credentials": "true",
+		},
+		Body:       string(body),
+		StatusCode: 404,
+	}, nil
 }
 
 func Respond200(body interface{}) (events.APIGatewayProxyResponse, error) {

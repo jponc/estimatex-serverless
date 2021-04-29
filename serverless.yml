@@ -107,8 +107,37 @@ functions:
       - http:
           path: /CastVote
           method: post
+          cors: true
+          authorizer:
+            name: Authoriser
+            resultTtlInSeconds: 0
     environment:
-      JWT_SECRET: ${self:custom.env.JWT_SECRET}
+      SNS_PREFIX: ${self:custom.env.SNS_PREFIX}
+
+  ResetVotes:
+    handler: bin/ResetVotes
+    events:
+      - http:
+          path: /ResetVotes
+          method: post
+          cors: true
+          authorizer:
+            name: Authoriser
+            resultTtlInSeconds: 0
+    environment:
+      SNS_PREFIX: ${self:custom.env.SNS_PREFIX}
+
+  RevealVotes:
+    handler: bin/RevealVotes
+    events:
+      - http:
+          path: /RevealVotes
+          method: post
+          cors: true
+          authorizer:
+            name: Authoriser
+            resultTtlInSeconds: 0
+    environment:
       SNS_PREFIX: ${self:custom.env.SNS_PREFIX}
 
   # == SNS ==
@@ -126,6 +155,26 @@ functions:
     handler: bin/PublishToPusherParticipantVoted
     events:
       - sns: ${self:service}-${self:provider.stage}-ParticipantVoted
+    environment:
+      PUSHER_APP_ID: ${self:custom.env.PUSHER_APP_ID}
+      PUSHER_KEY: ${self:custom.env.PUSHER_KEY}
+      PUSHER_SECRET: ${self:custom.env.PUSHER_SECRET}
+      PUSHER_CLUSTER: ${self:custom.env.PUSHER_CLUSTER}
+
+  PublishToPusherRevealVotes:
+    handler: bin/PublishToPusherRevealVotes
+    events:
+      - sns: ${self:service}-${self:provider.stage}-RevealVotes
+    environment:
+      PUSHER_APP_ID: ${self:custom.env.PUSHER_APP_ID}
+      PUSHER_KEY: ${self:custom.env.PUSHER_KEY}
+      PUSHER_SECRET: ${self:custom.env.PUSHER_SECRET}
+      PUSHER_CLUSTER: ${self:custom.env.PUSHER_CLUSTER}
+
+  PublishToPusherResetVotes:
+    handler: bin/PublishToPusherResetVotes
+    events:
+      - sns: ${self:service}-${self:provider.stage}-ResetVotes
     environment:
       PUSHER_APP_ID: ${self:custom.env.PUSHER_APP_ID}
       PUSHER_KEY: ${self:custom.env.PUSHER_KEY}

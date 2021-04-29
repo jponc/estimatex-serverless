@@ -15,6 +15,8 @@ import (
 type Service interface {
 	PublishToPusherParticipantJoined(ctx context.Context, snsEvent events.SNSEvent)
 	PublishToPusherParticipantVoted(ctx context.Context, snsEvent events.SNSEvent)
+	PublishToPusherResetVotes(ctx context.Context, snsEvent events.SNSEvent)
+	PublishToPusherRevealVotes(ctx context.Context, snsEvent events.SNSEvent)
 }
 
 type service struct {
@@ -73,6 +75,56 @@ func (s *service) PublishToPusherParticipantVoted(ctx context.Context, snsEvent 
 		"room_id":          msg.RoomID,
 		"participant_name": msg.ParticipantName,
 		"vote":             msg.Vote,
+	}
+
+	err = s.pusherClient.Trigger(ctx, channel, event, data)
+	if err != nil {
+		log.Fatalf("failed to trigger push: %w", err)
+	}
+}
+
+func (s *service) PublishToPusherResetVotes(ctx context.Context, snsEvent events.SNSEvent) {
+	snsMsg := snsEvent.Records[0].SNS.Message
+
+	var msg schema.ParticipantVotedMessage
+	err := json.Unmarshal([]byte(snsMsg), &msg)
+	if err != nil {
+		log.Fatalf("unable to unarmarshal message: %v", err)
+	}
+
+	if s.pusherClient == nil {
+		log.Fatalf("pusherClient not defined")
+	}
+
+	channel := fmt.Sprintf("room-%s", msg.RoomID)
+	event := "reset-votes"
+	data := map[string]string{
+		"room_id": msg.RoomID,
+	}
+
+	err = s.pusherClient.Trigger(ctx, channel, event, data)
+	if err != nil {
+		log.Fatalf("failed to trigger push: %w", err)
+	}
+}
+
+func (s *service) PublishToPusherRevealVotes(ctx context.Context, snsEvent events.SNSEvent) {
+	snsMsg := snsEvent.Records[0].SNS.Message
+
+	var msg schema.ParticipantVotedMessage
+	err := json.Unmarshal([]byte(snsMsg), &msg)
+	if err != nil {
+		log.Fatalf("unable to unarmarshal message: %v", err)
+	}
+
+	if s.pusherClient == nil {
+		log.Fatalf("pusherClient not defined")
+	}
+
+	channel := fmt.Sprintf("room-%s", msg.RoomID)
+	event := "reveal-votes"
+	data := map[string]string{
+		"room_id": msg.RoomID,
 	}
 
 	err = s.pusherClient.Trigger(ctx, channel, event, data)

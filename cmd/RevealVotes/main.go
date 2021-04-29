@@ -20,5 +20,5 @@ func main() {
 	}
 
 	service := api.NewService(nil, snsClient, nil)
-	lambda.Start(service.CastVote)
+	lambda.Start(service.RevealVotes)
 }
