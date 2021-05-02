@@ -26,6 +26,11 @@ func (s *service) HostRoom(ctx context.Context, request events.APIGatewayProxyRe
 		return lambdaresponses.Respond400(fmt.Errorf("failed to unmarshal body"))
 	}
 
+	if req.Name == "" {
+		return lambdaresponses.Respond400(fmt.Errorf("name can't be blank"))
+	}
+
+	// TODO Wrap both in a transaction, dynamoDB now supports transactions
 	room, err := s.ddbrepository.CreateRoom(ctx)
 	if err != nil {
 		log.Errorf("error creating room: %w", err)
@@ -63,6 +68,10 @@ func (s *service) FindRoom(ctx context.Context, request events.APIGatewayProxyRe
 		return lambdaresponses.Respond500()
 	}
 
+	if roomID == "" {
+		return lambdaresponses.Respond400(fmt.Errorf("roomID can't be blank"))
+	}
+
 	room, err := s.ddbrepository.FindRoom(ctx, roomID)
 	if err != nil {
 		if errors.Is(err, ddbrepository.ErrNotFound) {
@@ -93,6 +102,14 @@ func (s *service) JoinRoom(ctx context.Context, request events.APIGatewayProxyRe
 	err := json.Unmarshal([]byte(request.Body), req)
 	if err != nil {
 		return lambdaresponses.Respond400(fmt.Errorf("failed to unmarshal body"))
+	}
+
+	if req.RoomID == "" {
+		return lambdaresponses.Respond400(fmt.Errorf("roomID can't be blank"))
+	}
+
+	if req.Name == "" {
+		return lambdaresponses.Respond400(fmt.Errorf("name can't be blank"))
 	}
 
 	_, err = s.ddbrepository.FindRoom(ctx, req.RoomID)

@@ -34,6 +34,10 @@ func (s *service) CastVote(ctx context.Context, request events.APIGatewayProxyRe
 		return lambdaresponses.Respond400(fmt.Errorf("failed to unmarshal body"))
 	}
 
+	if req.Vote == "" {
+		return lambdaresponses.Respond400(fmt.Errorf("vote can't be blank"))
+	}
+
 	msg := schema.ParticipantVotedMessage{
 		RoomID:          roomID,
 		ParticipantName: name,
