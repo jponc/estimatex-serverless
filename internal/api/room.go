@@ -13,7 +13,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func (s *service) HostRoom(ctx context.Context, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
+func (s *Service) HostRoom(ctx context.Context, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	if s.authClient == nil || s.ddbrepository == nil {
 		log.Errorf("authClient or ddbrepository is nil")
 		return lambdaresponses.Respond500()
@@ -57,7 +57,7 @@ func (s *service) HostRoom(ctx context.Context, request events.APIGatewayProxyRe
 	return lambdaresponses.Respond200(res)
 }
 
-func (s *service) FindRoom(ctx context.Context, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
+func (s *Service) FindRoom(ctx context.Context, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	if s.ddbrepository == nil {
 		log.Errorf("ddbrepository is nil")
 		return lambdaresponses.Respond500()
@@ -90,7 +90,7 @@ func (s *service) FindRoom(ctx context.Context, request events.APIGatewayProxyRe
 	return lambdaresponses.Respond200(res)
 }
 
-func (s *service) JoinRoom(ctx context.Context, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
+func (s *Service) JoinRoom(ctx context.Context, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	if s.ddbrepository == nil || s.snsClient == nil || s.authClient == nil {
 
 		log.Errorf("ddbrepository or snsClient or authClient is nil")

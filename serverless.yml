@@ -112,6 +112,7 @@ functions:
             name: Authoriser
             resultTtlInSeconds: 0
     environment:
+      DB_TABLE_NAME: ${self:custom.env.DB_TABLE_NAME}
       SNS_PREFIX: ${self:custom.env.SNS_PREFIX}
 
   ResetVotes:

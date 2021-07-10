@@ -9,23 +9,18 @@ import (
 	"github.com/jponc/estimatex-serverless/internal/auth"
 )
 
-// Service interface implements functions available for this service
-type Service interface {
-	Authorise(ctx context.Context, request events.APIGatewayCustomAuthorizerRequest) (events.APIGatewayCustomAuthorizerResponse, error)
-}
-
-type service struct {
-	authClient auth.Client
+type Service struct {
+	authClient *auth.Client
 }
 
 // NewService instantiates a new service
-func NewService(authClient auth.Client) Service {
-	return &service{
+func NewService(authClient *auth.Client) *Service {
+	return &Service{
 		authClient: authClient,
 	}
 }
 
-func (s *service) Authorise(ctx context.Context, request events.APIGatewayCustomAuthorizerRequest) (events.APIGatewayCustomAuthorizerResponse, error) {
+func (s *Service) Authorise(ctx context.Context, request events.APIGatewayCustomAuthorizerRequest) (events.APIGatewayCustomAuthorizerResponse, error) {
 	authToken := request.AuthorizationToken
 	accessToken := strings.Split(authToken, " ")[1]
 

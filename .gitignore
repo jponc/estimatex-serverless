@@ -12,3 +12,5 @@ bin/
 .env
 .dynamodb
 tmp/
+
+.DS_Store

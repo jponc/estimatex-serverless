@@ -5,6 +5,8 @@ import (
 
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/jponc/estimatex-serverless/internal/api"
+	"github.com/jponc/estimatex-serverless/internal/repository/ddbrepository"
+	"github.com/jponc/estimatex-serverless/pkg/dynamodb"
 	"github.com/jponc/estimatex-serverless/pkg/sns"
 )
 
@@ -19,6 +21,16 @@ func main() {
 		log.Fatalf("cannot initialise sns client %v", err)
 	}
 
-	service := api.NewService(nil, snsClient, nil)
+	dynamodbClient, err := dynamodb.NewClient(config.AWSRegion, config.DBTableName)
+	if err != nil {
+		log.Fatalf("cannot initialise dynamodb client %v", err)
+	}
+
+	ddbrepository, err := ddbrepository.NewClient(dynamodbClient)
+	if err != nil {
+		log.Fatalf("cannot initialise ddbrepository %v", err)
+	}
+
+	service := api.NewService(ddbrepository, snsClient, nil)
 	lambda.Start(service.CastVote)
 }

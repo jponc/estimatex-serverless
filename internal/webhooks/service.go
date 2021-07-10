@@ -12,25 +12,18 @@ import (
 	"github.com/jponc/estimatex-serverless/pkg/pusher"
 )
 
-type Service interface {
-	PublishToPusherParticipantJoined(ctx context.Context, snsEvent events.SNSEvent)
-	PublishToPusherParticipantVoted(ctx context.Context, snsEvent events.SNSEvent)
-	PublishToPusherResetVotes(ctx context.Context, snsEvent events.SNSEvent)
-	PublishToPusherRevealVotes(ctx context.Context, snsEvent events.SNSEvent)
-}
-
-type service struct {
-	pusherClient pusher.Client
+type Service struct {
+	pusherClient *pusher.Client
 }
 
 // NewService instantiates a new service
-func NewService(pusherClient pusher.Client) Service {
-	return &service{
+func NewService(pusherClient *pusher.Client) *Service {
+	return &Service{
 		pusherClient: pusherClient,
 	}
 }
 
-func (s *service) PublishToPusherParticipantJoined(ctx context.Context, snsEvent events.SNSEvent) {
+func (s *Service) PublishToPusherParticipantJoined(ctx context.Context, snsEvent events.SNSEvent) {
 	snsMsg := snsEvent.Records[0].SNS.Message
 
 	var msg schema.ParticipantJoinedMessage
@@ -56,7 +49,7 @@ func (s *service) PublishToPusherParticipantJoined(ctx context.Context, snsEvent
 	}
 }
 
-func (s *service) PublishToPusherParticipantVoted(ctx context.Context, snsEvent events.SNSEvent) {
+func (s *Service) PublishToPusherParticipantVoted(ctx context.Context, snsEvent events.SNSEvent) {
 	snsMsg := snsEvent.Records[0].SNS.Message
 
 	var msg schema.ParticipantVotedMessage
@@ -83,7 +76,7 @@ func (s *service) PublishToPusherParticipantVoted(ctx context.Context, snsEvent 
 	}
 }
 
-func (s *service) PublishToPusherResetVotes(ctx context.Context, snsEvent events.SNSEvent) {
+func (s *Service) PublishToPusherResetVotes(ctx context.Context, snsEvent events.SNSEvent) {
 	snsMsg := snsEvent.Records[0].SNS.Message
 
 	var msg schema.ParticipantVotedMessage
@@ -108,7 +101,7 @@ func (s *service) PublishToPusherResetVotes(ctx context.Context, snsEvent events
 	}
 }
 
-func (s *service) PublishToPusherRevealVotes(ctx context.Context, snsEvent events.SNSEvent) {
+func (s *Service) PublishToPusherRevealVotes(ctx context.Context, snsEvent events.SNSEvent) {
 	snsMsg := snsEvent.Records[0].SNS.Message
 
 	var msg schema.ParticipantVotedMessage

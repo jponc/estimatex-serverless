@@ -13,19 +13,13 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// Client interface
-type Client interface {
-	// Publish publishes a new message to a SNS topic
-	Publish(ctx context.Context, topic string, message interface{}) error
-}
-
-type client struct {
+type Client struct {
 	awsSnsClient *awsSns.SNS
 	snsPrefix    string
 }
 
 // NewClient instantiates a SNS client
-func NewClient(awsRegion, snsPrefix string) (Client, error) {
+func NewClient(awsRegion, snsPrefix string) (*Client, error) {
 	sess, err := session.NewSession(&aws.Config{
 		Region: aws.String(awsRegion),
 	})
@@ -37,7 +31,7 @@ func NewClient(awsRegion, snsPrefix string) (Client, error) {
 	awsSnsClient := sns.New(sess)
 	xray.AWS(awsSnsClient.Client)
 
-	c := &client{
+	c := &Client{
 		awsSnsClient: awsSnsClient,
 		snsPrefix:    snsPrefix,
 	}
@@ -45,7 +39,7 @@ func NewClient(awsRegion, snsPrefix string) (Client, error) {
 	return c, nil
 }
 
-func (c *client) Publish(ctx context.Context, topic string, message interface{}) error {
+func (c *Client) Publish(ctx context.Context, topic string, message interface{}) error {
 	msg, err := json.Marshal(message)
 	if err != nil {
 		return fmt.Errorf("failed to marshal sns message: %v", err)

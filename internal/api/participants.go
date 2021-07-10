@@ -8,7 +8,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func (s *service) FindParticipants(ctx context.Context, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
+func (s *Service) FindParticipants(ctx context.Context, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	if s.ddbrepository == nil {
 		log.Errorf("ddbrepository is nil")
 		return lambdaresponses.Respond500()

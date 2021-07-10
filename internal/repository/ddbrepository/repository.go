@@ -14,21 +14,8 @@ import (
 	"github.com/jponc/estimatex-serverless/pkg/dynamodb"
 )
 
-type Repository interface {
-	// CreateRoom creates Room
-	CreateRoom(ctx context.Context) (*types.Room, error)
-	// CreateParticipant creates Participant
-	CreateParticipant(ctx context.Context, roomID string, name string, isAdmin bool) (*types.Participant, error)
-	// FindRoom finds the room
-	FindRoom(ctx context.Context, roomID string) (*types.Room, error)
-	// FindParticipant finds the participant in the room
-	FindParticipant(ctx context.Context, roomID, participantName string) (*types.Participant, error)
-	// FindParticipants finds the participant in the room
-	FindParticipants(ctx context.Context, roomID string) (*[]types.Participant, error)
-}
-
-type repository struct {
-	dynamodbClient dynamodb.Client
+type Repository struct {
+	dynamodbClient *dynamodb.Client
 }
 
 type roomItem struct {
@@ -44,15 +31,15 @@ type participantItem struct {
 }
 
 // NewClient instantiates a repository
-func NewClient(dynamodbClient dynamodb.Client) (Repository, error) {
-	r := &repository{
+func NewClient(dynamodbClient *dynamodb.Client) (*Repository, error) {
+	r := &Repository{
 		dynamodbClient: dynamodbClient,
 	}
 
 	return r, nil
 }
 
-func (r *repository) CreateRoom(ctx context.Context) (*types.Room, error) {
+func (r *Repository) CreateRoom(ctx context.Context) (*types.Room, error) {
 	roomID, err := r.generateRoomID(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate room ID (%w)", err)
@@ -91,7 +78,43 @@ func (r *repository) CreateRoom(ctx context.Context) (*types.Room, error) {
 	return room, nil
 }
 
-func (r *repository) CreateParticipant(ctx context.Context, roomID string, name string, isAdmin bool) (*types.Participant, error) {
+func (r *Repository) CastVote(ctx context.Context, roomID, name, vote string) error {
+	participant, err := r.FindParticipant(ctx, roomID, name)
+	if err != nil {
+		return fmt.Errorf("failed to get participant (%w)", err)
+	}
+
+	participant.LatestVote = vote
+
+	item := struct {
+		PK   string
+		SK   string
+		Data *types.Participant
+	}{
+		PK:   fmt.Sprintf("Room_%s", participant.RoomID),
+		SK:   fmt.Sprintf("Participant_%s", participant.Name),
+		Data: participant,
+	}
+
+	itemMap, err := dynamodbattribute.MarshalMap(item)
+	if err != nil {
+		return fmt.Errorf("failed to ddb marshal result item record, %v", err)
+	}
+
+	input := &awsDynamodb.PutItemInput{
+		Item:      itemMap,
+		TableName: aws.String(r.dynamodbClient.GetTableName()),
+	}
+
+	_, err = r.dynamodbClient.PutItem(ctx, input)
+	if err != nil {
+		return fmt.Errorf("failed to put Participant: %v", err)
+	}
+
+	return nil
+}
+
+func (r *Repository) CreateParticipant(ctx context.Context, roomID string, name string, isAdmin bool) (*types.Participant, error) {
 	participant := &types.Participant{
 		RoomID:    roomID,
 		Name:      name,
@@ -127,7 +150,7 @@ func (r *repository) CreateParticipant(ctx context.Context, roomID string, name 
 	return participant, nil
 }
 
-func (r *repository) FindRoom(ctx context.Context, roomID string) (*types.Room, error) {
+func (r *Repository) FindRoom(ctx context.Context, roomID string) (*types.Room, error) {
 	i := roomItem{}
 
 	input := &awsDynamodb.GetItemInput{
@@ -159,7 +182,7 @@ func (r *repository) FindRoom(ctx context.Context, roomID string) (*types.Room, 
 	return &i.Data, nil
 }
 
-func (r *repository) FindParticipant(ctx context.Context, roomID, participantName string) (*types.Participant, error) {
+func (r *Repository) FindParticipant(ctx context.Context, roomID, participantName string) (*types.Participant, error) {
 	i := participantItem{}
 
 	input := &awsDynamodb.GetItemInput{
@@ -191,7 +214,7 @@ func (r *repository) FindParticipant(ctx context.Context, roomID, participantNam
 	return &i.Data, nil
 }
 
-func (r *repository) FindParticipants(ctx context.Context, roomID string) (*[]types.Participant, error) {
+func (r *Repository) FindParticipants(ctx context.Context, roomID string) (*[]types.Participant, error) {
 	items := []participantItem{}
 
 	input := &awsDynamodb.QueryInput{
@@ -225,7 +248,7 @@ func (r *repository) FindParticipants(ctx context.Context, roomID string) (*[]ty
 	return &participants, nil
 }
 
-func (r *repository) generateRoomID(ctx context.Context) (string, error) {
+func (r *Repository) generateRoomID(ctx context.Context) (string, error) {
 	for {
 		rand.Seed(time.Now().UnixNano())
 

@@ -11,7 +11,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func (s *service) CastVote(ctx context.Context, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
+func (s *Service) CastVote(ctx context.Context, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	if s.snsClient == nil {
 		log.Errorf("snsClient or authClient is nil")
 		return lambdaresponses.Respond500()
@@ -38,6 +38,12 @@ func (s *service) CastVote(ctx context.Context, request events.APIGatewayProxyRe
 		return lambdaresponses.Respond400(fmt.Errorf("vote can't be blank"))
 	}
 
+	log.Infof("roomID: %s, name: %s, vote: %s", roomID, name, req.Vote)
+	err = s.ddbrepository.CastVote(ctx, roomID, name, req.Vote)
+	if err != nil {
+		return lambdaresponses.Respond500()
+	}
+
 	msg := schema.ParticipantVotedMessage{
 		RoomID:          roomID,
 		ParticipantName: name,
@@ -55,7 +61,7 @@ func (s *service) CastVote(ctx context.Context, request events.APIGatewayProxyRe
 	return lambdaresponses.Respond200(res)
 }
 
-func (s *service) RevealVotes(ctx context.Context, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
+func (s *Service) RevealVotes(ctx context.Context, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	if s.snsClient == nil {
 		log.Errorf("snsClient or authClient is nil")
 		return lambdaresponses.Respond500()
@@ -92,7 +98,7 @@ func (s *service) RevealVotes(ctx context.Context, request events.APIGatewayProx
 	return lambdaresponses.Respond200(res)
 }
 
-func (s *service) ResetVotes(ctx context.Context, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
+func (s *Service) ResetVotes(ctx context.Context, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	if s.snsClient == nil {
 		log.Errorf("snsClient or authClient is nil")
 		return lambdaresponses.Respond500()
