@@ -7,13 +7,19 @@ import (
 
 // Config
 type Config struct {
-	AWSRegion string
-	SNSPrefix string
+	AWSRegion   string
+	DBTableName string
+	SNSPrefix   string
 }
 
 // NewConfig initialises a new config
 func NewConfig() (*Config, error) {
 	awsRegion, err := getEnv("AWS_REGION")
+	if err != nil {
+		return nil, err
+	}
+
+	dbTableName, err := getEnv("DB_TABLE_NAME")
 	if err != nil {
 		return nil, err
 	}
@@ -24,8 +30,9 @@ func NewConfig() (*Config, error) {
 	}
 
 	return &Config{
-		AWSRegion: awsRegion,
-		SNSPrefix: snsPrefix,
+		AWSRegion:   awsRegion,
+		DBTableName: dbTableName,
+		SNSPrefix:   snsPrefix,
 	}, nil
 }
 

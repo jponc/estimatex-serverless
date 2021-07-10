@@ -38,9 +38,15 @@ func (s *Service) CastVote(ctx context.Context, request events.APIGatewayProxyRe
 		return lambdaresponses.Respond400(fmt.Errorf("vote can't be blank"))
 	}
 
-	log.Infof("roomID: %s, name: %s, vote: %s", roomID, name, req.Vote)
-	err = s.ddbrepository.CastVote(ctx, roomID, name, req.Vote)
+	p, err := s.ddbrepository.FindParticipant(ctx, roomID, name)
 	if err != nil {
+		log.Errorf("failed to get participant: %v", err)
+		return lambdaresponses.Respond500()
+	}
+
+	err = s.ddbrepository.CastVote(ctx, p, req.Vote)
+	if err != nil {
+		log.Errorf("failed to cast vote: %v", err)
 		return lambdaresponses.Respond500()
 	}
 
@@ -100,7 +106,12 @@ func (s *Service) RevealVotes(ctx context.Context, request events.APIGatewayProx
 
 func (s *Service) ResetVotes(ctx context.Context, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	if s.snsClient == nil {
-		log.Errorf("snsClient or authClient is nil")
+		log.Errorf("snsClient is nil")
+		return lambdaresponses.Respond500()
+	}
+
+	if s.ddbrepository == nil {
+		log.Errorf("ddbrepository is nil")
 		return lambdaresponses.Respond500()
 	}
 
@@ -120,11 +131,25 @@ func (s *Service) ResetVotes(ctx context.Context, request events.APIGatewayProxy
 		return lambdaresponses.Respond500()
 	}
 
+	participants, err := s.ddbrepository.FindParticipants(ctx, roomID)
+	if err != nil {
+		log.Errorf("failed to get participants: %v", err)
+	}
+
+	for _, p := range *participants {
+		err := s.ddbrepository.CastVote(ctx, &p, "")
+		if err != nil {
+			log.Errorf("failed to cast vote: %w", err)
+			return lambdaresponses.Respond500()
+		}
+	}
+
+	// Send SNS
 	msg := schema.ResetVotesMessage{
 		RoomID: roomID,
 	}
 
-	err := s.snsClient.Publish(ctx, schema.ResetVotes, msg)
+	err = s.snsClient.Publish(ctx, schema.ResetVotes, msg)
 	if err != nil {
 		log.Errorf("error doing RevealVotes to sns: %w", err)
 		return lambdaresponses.Respond500()

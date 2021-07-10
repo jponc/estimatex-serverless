@@ -78,12 +78,7 @@ func (r *Repository) CreateRoom(ctx context.Context) (*types.Room, error) {
 	return room, nil
 }
 
-func (r *Repository) CastVote(ctx context.Context, roomID, name, vote string) error {
-	participant, err := r.FindParticipant(ctx, roomID, name)
-	if err != nil {
-		return fmt.Errorf("failed to get participant (%w)", err)
-	}
-
+func (r *Repository) CastVote(ctx context.Context, participant *types.Participant, vote string) error {
 	participant.LatestVote = vote
 
 	item := struct {
