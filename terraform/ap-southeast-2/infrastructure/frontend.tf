@@ -88,17 +88,17 @@ resource "aws_cloudfront_distribution" "frontend_distribution" {
 
   # Custom error response to handle 4xx
   custom_error_response {
-    error_code = 403
+    error_code            = 403
     error_caching_min_ttl = 60
-    response_code = 200
-    response_page_path = "/index.html"
+    response_code         = 200
+    response_page_path    = "/index.html"
   }
 
   custom_error_response {
-    error_code = 404
+    error_code            = 404
     error_caching_min_ttl = 60
-    response_code = 200
-    response_page_path = "/index.html"
+    response_code         = 200
+    response_page_path    = "/index.html"
   }
 
 
