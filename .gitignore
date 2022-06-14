@@ -14,3 +14,10 @@ bin/
 tmp/
 
 .DS_Store
+
+# Local .terraform directories
+**/.terraform/*
+
+# .tfstate files
+*.tfstate
+*.tfstate.*
