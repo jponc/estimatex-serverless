@@ -23,3 +23,8 @@ variable "api_domain_name" {
   type        = string
   description = "API Domain name"
 }
+
+variable "frontend_domain_name" {
+  type        = string
+  description = "Frontend Domain name"
+}
