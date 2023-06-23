@@ -1,5 +1,5 @@
 # estimatex-serverless
-Serverless Endpoints for [estimatex.io](http://estimatex.io)
+Serverless Endpoints for [estimatex.jponc.dev](http://estimatex.jponc.dev)
 
 # Architecture
 
